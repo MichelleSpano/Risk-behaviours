@@ -1,0 +1,19 @@
+mypath="path"
+setwd(mypath)
+
+install.packages("tidyverse")
+
+library(tidyr)
+library(dplyr)
+library(readr)
+
+#PCAS
+pca_txt <- read.table("/ALSPAC/data.eigenvec", quote="\"", comment.char="")
+names(pca_txt)<-c("FID", "IID","PC1", "PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9","PC10","PC11","PC12","PC13","PC14","PC15","PC16","PC17","PC18","PC19","PC20")
+
+write.table(pca_txt,"mypath/PCA.txt", row.names=FALSE, col.names = TRUE, quote=FALSE)
+
+mothers_pca_txt <- read.table("/ALSPAC/mothers.data.eigenvec", quote="\"", comment.char="")
+names(mothers_pca_txt)<-c("FID", "IID","MPC1", "MPC2","MPC3","MPC4","MPC5","MPC6","MPC7","MPC8","MPC9","MPC10","MPC11","MPC12","MPC13","MPC14","MPC15","MPC16","MPC17","MPC18","MPC19","MPC20")
+
+write.table(mothers_pca_txt,"mypath/MPCA.txt", row.names=FALSE, col.names = TRUE, quote=FALSE)

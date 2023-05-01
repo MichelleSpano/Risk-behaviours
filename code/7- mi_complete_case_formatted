@@ -1,0 +1,109 @@
+******Multiple imputation with PGS *******
+clear 
+cd "path"
+use "complete_case_formatted.dta", clear 
+
+count
+
+*ssc install mdesc
+*ssc install fre
+
+
+
+********************************************************************************
+*******************Multiple Imputation - Risk Behaviours************************
+********************************************************************************
+
+
+**********Covariates*****************
+
+*Categorical variables: parental social class and mothers education
+
+mdesc parent_sclass // parental social class 
+mdesc mummed // mothers education 
+
+*Binary variables: marital status, maternal cigarette smoking and ethnic group
+
+fre a525 // marital status
+gen marital_stat=a525 
+recode marital_stat 1/4=0 5/6=1 
+label define marital_stat 0 "single" 1 "married"
+
+tab e170 //smoked cigarettes reg in las 2mnts of preg  
+gen mother_smk=e170
+recode mother_smk 1=1 2=0
+
+fre c800 // ethnic group 
+gen ethnic=c800
+recode ethnic 1=0 9=1
+label define ethnic 0 "white" 1 "other"
+*0 = white (n=7047)
+*1 = other (n=6)
+
+
+*Continuous variables: BMI, parity and total IQ 
+
+tab cf062 // BMI @12 
+tab cf063 // BMI @18
+tab cf064 // BMI @25 
+
+tab b032a // parity 
+
+tab f8ws112 // total IQ  
+
+*Ordered variables: Housing tenure 
+
+*fre a006 //housing tenure 
+*gen housingtenure_new=a006
+*recode housingtenure_new 1=0 2=1 3/6=2
+
+*Tidying vars: dropping missing from sex var and not alive at 1 year.
+
+mdesc kz021 // sex var 
+drop if missing(kz021)
+
+fre kz011b // alive at 1 year Y/N 
+drop if kz011b==2
+
+*egen zks4_ptscnewe = std(ks4_ptscnewe) // cont outcome 
+
+***Checking for missingness in all covars****
+
+mdesc parent_sclass mummed kz021 kz011b marital_stat cf062-cf064 housingtenure_new f8ws112 ethnic b032a e170 pc1-pc20 zmrb_score_child zeduc_score_child  zmrb_score_mom zeduc_score_mom ks4_level2_em
+*zks4_ptscnewe 
+*no missingness in kz021 and kz011b
+** Low missingness in all other covars BUT cf062-cf064 (BMI measures), precentage of missingness of ~91% 
+
+*Set up dataset for MI 
+mi set wide 
+
+mi misstable sum // All vars with missing values 
+mi misstable sum,all // Include vars with no missing values in the table 
+mi misstable pattern //1 means complete 
+
+mi register imputed inactivity tvtime passngr scooter helmetuse new_drugs_with_missing smkcan smktab audit_new_binary selfhrm sexundr16 unprotsex CrimBehaviour /// *MRBS* 
+parent_sclass mummed marital_stat cf062-cf064 b032a e170 housingtenure_new f8ws112 ethnic mother_smk ///covars
+ks4_ptscnewe ks4_level2_em /// outcome
+zmrb_score_mom zeduc_score_mom 
+
+*zks4_ptscnewe///
+
+mi register regular kz021 zmrb_score_child zeduc_score_child 
+
+mi impute chained ///
+(logit) inactivity tvtime passngr scooter helmetuse new_drugs_with_missing smkcan smktab audit_new_binary selfhrm sexundr16 unprotsex CrimBehaviour /// mrbs
+(logit) marital_stat mother_smk ks4_level2_em /// binary
+(ologit) mummed housingtenure_new parent_sclass /// ordered vars
+(regress) b032a /// parity
+(truncreg, ll(45) ul(151)) f8ws112 /// continous IQ 
+(regress) zmrb_score_mom zeduc_score_mom ks4_ptscnewe  ///
+= kz021 pc1-pc20 zmrb_score_child zeduc_score_child , replace add(50) rseed(100) dots savetrace(complete_case_formatted_stats.dta, replace) augment
+save "mi_complete_case_formatted.dta", replace
+
+
+
+
+
+
+
+

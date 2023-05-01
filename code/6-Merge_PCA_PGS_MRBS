@@ -1,0 +1,83 @@
+***Merging 
+
+**MRB data set:"\MRBS data\mrb_final
+***PCA for children: \mypath\children_pca
+***PGS for education and risk: \MRBS data \formatted_scores 
+
+cd "mypaht"
+
+use "...\MRBS data\mrb_final.dta", clear // MRBS dataset 
+joinby aln qlet using "...\MRBS data\children_pca.dta", unmatched(using) _merge(pcas)
+
+count
+
+
+save "mrb_final_cpca.dta", replace 
+
+clear 
+
+******** Starting from the PGI scores file, that has PGI for Education and Risk for both mother and offspring
+**So what we want to do is drop mother related information so we only have offspring information in one file to merge into the mrbs/pcs file 
+
+use "...\PGS data\formatted_scores.dta", replace 
+*use "mrb_final_cpa.dta", replace 
+
+count 
+drop *mom 
+drop if qlet2==5
+count
+
+save "formatted_scores_onlychild.dta", replace
+
+****Now we are going to merge with the dataset that includes complete case and children PCA's 
+
+joinby aln qlet using "...\MRBS paper\mrb_final_cpca.dta", unmatched(using) _merge(child)
+
+count 
+
+tab qlet2
+
+*****Now we save this one to then merge with the mothers PGS 
+
+save "formatted_scores_pca_pgsonlychild.dta",replace 
+
+clear
+
+
+**********************************************************************************************
+
+*We go back to the complete formatted_scores dataset and we drop everything kids related and just keep the moms, so the opposite of the last step 
+
+use "...\PGS data\formatted_scores.dta", replace 
+
+drop *child
+drop if qlet2==1|qlet2==2|qlet2==3|qlet2==4
+
+count
+
+tab qlet2 
+
+save "formatted_score_onlymom.dta", replace
+
+*********************************************************************************************************
+
+****Now, we start with the file that contains complete case mrbs, children pcas and scores 
+clear 
+use "formatted_scores_pca_pgsonlychild.dta", clear 
+
+count
+
+joinby aln using "formatted_score_onlymom.dta", unmatched(master) _merge(mom)
+count 
+
+tab mom
+
+sum zeduc_score_mom zmrb_score_mom
+
+save "complete_case_formatted.dta", replace 
+
+*joinby aln using "...\MRBS paper\mrb_final_cpca.dta", unmatched(using) _merge(moms)
+
+*merge 1:m aln using "...\MRBS paper\mrb_final_cpca.dta"
+
+save "mrb_final_cpca_pgs.dta", replace 

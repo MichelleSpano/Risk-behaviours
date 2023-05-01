@@ -1,0 +1,95 @@
+
+*cd "path"
+*use "\mi_complete_case_formatted.dta ", clear 
+
+
+count
+
+*****mrbs 
+
+mi passive: gen mrb_mi = inactivity + tvtime + passngr + helmetuse + scooter + new_drugs_with_missing + smkcan + smktab + audit_new_binary + selfhrm + sexundr16 +unprotsex + CrimBehaviour
+
+gen mrbs= inactivity + tvtime + passngr + helmetuse + scooter + new_drugs_with_missing + smkcan + smktab + audit_new_binary + selfhrm + sexundr16 +unprotsex + CrimBehaviour
+
+***standardized outcomes 
+
+*egen zks4_ptscnewe = std(ks4_ptscnewe) // cont outcome 
+
+***cont outcome regressions 
+
+mi est: reg zks4_ptscnewe mrb_mi , robust
+
+mi est:reg zks4_ptscnewe mrb_mi parent_sclass mummed female, robust 
+
+mi est:reg zks4_ptscnewe mrb_mi parent_sclass mummed female housingtenure_new, robust
+
+mi est:reg zks4_ptscnewe mrb_mi parent_sclass mummed female housingtenure_new f8ws112, robust 
+
+***Binary outcome regressions 
+
+mi est, or: logistic ks4_level2_em mrb_mi , robust 
+
+mi est, or: logistic ks4_level2_em mrb_mi parent_sclass mummed female, robust 
+
+mi est, or: logistic logisticks4_level2_em mrb_mi parent_sclass mummed female housingtenure_new, robust
+
+mi est, or: logistic ks4_level2_em mrb_mi parent_sclass mummed female housingtenure_new f8ws112, robust 
+
+
+****************************************************************************   MR **************************************************************
+
+*****cont outcome *********
+
+mi est,cmdok: ivreg2 zks4_ptscnewe kz021 pc1-pc20 (mrb_mi = zmrb_score_child), robust 
+estimate store A
+
+*cont outcome mother control 
+
+mi est,cmdok: ivreg2 zks4_ptscnewe pc1-pc20 kz021 zmrb_score_mom (mrb_mi = zmrb_score_child), robust 
+estimate store B
+
+****  plot 
+
+coefplot (A, label(Capped GCSE Score)) (B, label(Outcome adjusted for maternal risk PG)),drop(_cons kz021 pc* zmrb_score_mom ) xline(0) xlabel(-0.4(0.1)0.4) xscale(range(-0.4(0.1)0.4)) name(graph1, replace)
+
+******Binary outcome 
+
+mi est,cmdok: ivreg2 ks4_level2_em  kz021 pc1-pc20 (mrb_mi = zmrb_score_child), robust
+estimate store C
+
+*binary outcome mother control 
+mi est,cmdok: ivreg2 ks4_level2_em  kz021 pc1-pc20 zmrb_score_mom (mrb_mi = zmrb_score_child), robust
+estimate store D
+
+*PLOTT 
+
+coefplot (C, label(A*-C GCSE's including English and Maths)) (D, label(Outcome adjusted for maternal risk PGS)),drop(_cons kz021 pc* zmrb_score_mom) xline(0) xlabel(-0.4(0.1)0.4) xscale(range(-0.4(0.1)0.4)) name(graph2, replace)
+
+**combine plots 
+
+graph combine graph1 graph2,row(2)
+
+
+** bidirectional mr - cont 
+mi est, cmdok: ivreg2 mrb_mi pc1-pc20 kz021 (zks4_ptscnewe = zeduc_score_child), robust 
+estimate store E 
+mi est, cmdok: ivreg2 mrb_mi pc1-pc20 zeduc_score_mom kz021 (zks4_ptscnewe = zeduc_score_child), robust 
+estimate store F 
+**** PLOT ONE WITH MOM AND ONE W/O 
+coefplot (E, label(MRBS)) (F, label(Outcome adjusted for maternal risk PGS)),drop(_cons kz021 pc* zeduc_score_mom  ) name(graph3, replace)
+
+**coefplot (E, label(MRBS)) (F, label(Outcome adjusted for maternal risk PGS)),drop(_cons kz021 pc* zeduc_score_mom  ) xline(0) xlabel(-0.02(0.005)-0.005) xscale(range(-0.02(0.005)-0.005)) name(graph3, replace)
+
+** bidirectional mr - binary
+
+mi est, cmdok: ivreg2 mrb_mi pc1-pc20 kz021 (ks4_level2_em = zeduc_score_child), robust 
+estimate store G
+mi est, cmdok: ivreg2 mrb_mi pc1-pc20 zeduc_score_mom kz021 (ks4_level2_em = zeduc_score_child), robust 
+estimate store H
+coefplot (G, label( MRBS)) (H, label(Outcome adjusted for maternal risk PGS)),drop(_cons kz021 pc* zeduc_score_mom ) xline(0) name(graph4, replace)
+
+****combined 
+
+graph combine graph3 graph4,row(2) 
+
+

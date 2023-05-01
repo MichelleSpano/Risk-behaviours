@@ -1,0 +1,18 @@
+*PCA formatting 
+cd"mypath"
+
+**Preping the MRBs PGS first 
+
+import delimited PCA.txt, delimiter(whitespace, collapse)
+
+*convert the ids into one which can be merged on, by stripping off the qlet from cidB2953
+
+split iid, p("M" "A" "B" "C" "D")
+
+gen qlet=substr(iid,-1,1)
+
+rename iid1 aln
+
+destring aln, replace
+
+save "pca.dta", replace
